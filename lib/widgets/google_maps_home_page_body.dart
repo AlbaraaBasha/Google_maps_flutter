@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_section/models/places_model.dart';
+import 'package:location/location.dart';
 
 class GoogleMapsHomePageBody extends StatefulWidget {
   const GoogleMapsHomePageBody({super.key});
@@ -12,16 +13,19 @@ class GoogleMapsHomePageBody extends StatefulWidget {
 class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
   late CameraPosition initialCameraPosition;
   late GoogleMapController mapController;
+  late Location location;
   @override
   void initState() {
+    location = Location();
     initialCameraPosition = const CameraPosition(
       target: LatLng(37.7749, -122.4194), // San Francisco coordinates
       zoom: 10,
     );
-    initMarkers();
-    initPolylines();
-    initPolygons();
-    initCircles();
+    // initMarkers();
+    // initPolylines();
+    // initPolygons();
+    // initCircles();
+    updateMyLocation();
     super.initState();
   }
 
@@ -33,6 +37,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
   Set<Polyline> polylines = {};
   Set<Polygon> polygons = {};
   Set<Circle> circles = {};
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -151,5 +156,66 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
       strokeColor: Colors.deepPurple,
     );
     circles.add(circle);
+  }
+
+  Future<void> checkAndRequestGPS() async {
+    var isEnabled = await location.serviceEnabled();
+    if (!isEnabled) {
+      var serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You Can\'t use this app without GPS')),
+        );
+      }
+    }
+  }
+
+  Future<bool> checkAndRequestPermession() async {
+    PermissionStatus permissionStatus;
+    permissionStatus = await location.hasPermission();
+    if (permissionStatus == PermissionStatus.deniedForever) {
+      return false;
+    }
+    if (permissionStatus == PermissionStatus.denied) {
+      permissionStatus = await location.requestPermission();
+      if (permissionStatus == PermissionStatus.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You Need to Allow Location Permission'),
+          ),
+        );
+      }
+    }
+    return permissionStatus == PermissionStatus.granted ||
+        permissionStatus == PermissionStatus.grantedLimited;
+  }
+
+  void getLocation() async {
+    location.changeSettings(distanceFilter: 2);
+    location.onLocationChanged.listen((locationData) {
+      markers.add(
+        Marker(
+          markerId: MarkerId('my_location_marker'),
+          position: LatLng(locationData.latitude!, locationData.longitude!),
+        ),
+      );
+      setState(() {});
+      mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(locationData.latitude!, locationData.longitude!),
+            zoom: 15,
+          ),
+        ),
+      );
+    });
+  }
+
+  void updateMyLocation() async {
+    await checkAndRequestGPS();
+    var hasPermission = await checkAndRequestPermession();
+    if (hasPermission) {
+      getLocation();
+    }
   }
 }
