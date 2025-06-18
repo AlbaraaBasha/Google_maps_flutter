@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_section/models/places_model.dart';
+import 'package:google_maps_section/utils/location_services.dart';
 import 'package:location/location.dart';
 
 class GoogleMapsHomePageBody extends StatefulWidget {
@@ -13,10 +14,11 @@ class GoogleMapsHomePageBody extends StatefulWidget {
 class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
   late CameraPosition initialCameraPosition;
   late GoogleMapController mapController;
-  late Location location;
+  late LocationServices locationServices;
+  bool isFirstCall = true;
   @override
   void initState() {
-    location = Location();
+    locationServices = LocationServices();
     initialCameraPosition = const CameraPosition(
       target: LatLng(37.7749, -122.4194), // San Francisco coordinates
       zoom: 10,
@@ -158,64 +160,44 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
     circles.add(circle);
   }
 
-  Future<void> checkAndRequestGPS() async {
-    var isEnabled = await location.serviceEnabled();
-    if (!isEnabled) {
-      var serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You Can\'t use this app without GPS')),
-        );
-      }
+  void updateMyLocation() async {
+    await locationServices.checkAndRequestGPS();
+    var hasPermission = await locationServices.checkAndRequestPermession();
+    if (hasPermission) {
+      locationServices.getLocation((locationData) {
+        setMyLocationMarker(locationData);
+        setCameraPosition(locationData);
+      });
     }
   }
 
-  Future<bool> checkAndRequestPermession() async {
-    PermissionStatus permissionStatus;
-    permissionStatus = await location.hasPermission();
-    if (permissionStatus == PermissionStatus.deniedForever) {
-      return false;
-    }
-    if (permissionStatus == PermissionStatus.denied) {
-      permissionStatus = await location.requestPermission();
-      if (permissionStatus == PermissionStatus.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You Need to Allow Location Permission'),
-          ),
-        );
-      }
-    }
-    return permissionStatus == PermissionStatus.granted ||
-        permissionStatus == PermissionStatus.grantedLimited;
-  }
-
-  void getLocation() async {
-    location.changeSettings(distanceFilter: 2);
-    location.onLocationChanged.listen((locationData) {
-      markers.add(
-        Marker(
-          markerId: MarkerId('my_location_marker'),
-          position: LatLng(locationData.latitude!, locationData.longitude!),
-        ),
-      );
-      setState(() {});
+  void setCameraPosition(LocationData locationData) {
+    if (isFirstCall) {
       mapController.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(locationData.latitude!, locationData.longitude!),
-            zoom: 15,
+            zoom: 17,
           ),
         ),
       );
-    });
+      isFirstCall = false;
+    } else {
+      mapController.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(locationData.latitude!, locationData.longitude!),
+        ),
+      );
+    }
   }
 
-  void updateMyLocation() async {
-    await checkAndRequestGPS();
-    var hasPermission = await checkAndRequestPermession();
-    if (hasPermission) {
-      getLocation();
-    }
+  void setMyLocationMarker(LocationData locationData) {
+    markers.add(
+      Marker(
+        markerId: MarkerId('my_location_marker'),
+        position: LatLng(locationData.latitude!, locationData.longitude!),
+      ),
+    );
+    setState(() {});
   }
 }
