@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_section/models/places_model.dart';
+import 'package:google_maps_section/screens/route_tracker_app.dart';
 import 'package:google_maps_section/utils/location_services.dart';
 import 'package:location/location.dart';
 
@@ -71,6 +72,22 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
               },
 
               child: Text('Make action'),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          bottom: 30,
+          child: Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const RouteTrackerApp(),
+                  ),
+                );
+              },
+              child: Text('Next App'),
             ),
           ),
         ),
@@ -161,14 +178,10 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
   }
 
   void updateMyLocation() async {
-    await locationServices.checkAndRequestGPS();
-    var hasPermission = await locationServices.checkAndRequestPermession();
-    if (hasPermission) {
-      locationServices.getLocation((locationData) {
-        setMyLocationMarker(locationData);
-        setCameraPosition(locationData);
-      });
-    }
+    locationServices.getRealTimeLocation((locationData) {
+      setMyLocationMarker(locationData);
+      setCameraPosition(locationData);
+    });
   }
 
   void setCameraPosition(LocationData locationData) {
