@@ -28,11 +28,11 @@ class CostumTextField extends StatelessWidget {
   OutlineInputBorder borderLine() {
     return OutlineInputBorder(
       borderRadius: searchController.text.isNotEmpty
-          ? BorderRadius.only(
+          ? const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             )
-          : BorderRadius.all(Radius.circular(20)),
+          : const BorderRadius.all(Radius.circular(20)),
       borderSide: const BorderSide(color: Colors.transparent),
     );
   }

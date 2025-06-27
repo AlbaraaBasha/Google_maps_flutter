@@ -34,7 +34,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
 
   var darkstyle;
   Set<Marker> markers = {
-    Marker(markerId: MarkerId('4'), position: LatLng(38.7749, -122.4194)),
+    const Marker(markerId: MarkerId('4'), position: LatLng(38.7749, -122.4194)),
   };
 
   Set<Polyline> polylines = {};
@@ -71,7 +71,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
                 setState(() {});
               },
 
-              child: Text('Make action'),
+              child: const Text('Make action'),
             ),
           ),
         ),
@@ -87,7 +87,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
                   ),
                 );
               },
-              child: Text('Next App'),
+              child: const Text('Next App'),
             ),
           ),
         ),
@@ -103,7 +103,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
 
   void initMarkers() async {
     var customMarkerIcon = await BitmapDescriptor.asset(
-      ImageConfiguration(size: Size(100, 100)),
+      const ImageConfiguration(size: Size(100, 100)),
       'assets/images/marker1.png',
     );
     places
@@ -124,7 +124,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
   }
 
   void initPolylines() {
-    Polyline polyline = Polyline(
+    Polyline polyline = const Polyline(
       polylineId: PolylineId('1'),
       color: Colors.red,
       width: 4,
@@ -141,18 +141,18 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
 
   void initPolygons() {
     Polygon polygon = Polygon(
-      holes: [
+      holes: const [
         [
           LatLng(37.8087, -122.4098), // Near Fisherman's Wharf (North)
           LatLng(37.8079, -122.4750), // Near Sea Cliff (Northwest)
           LatLng(37.7081, -122.5107), // Daly City border (Southwest)
         ],
       ],
-      polygonId: PolygonId('san_francisco'),
+      polygonId: const PolygonId('san_francisco'),
       fillColor: Colors.green.withValues(alpha: 0.5),
       strokeColor: Colors.red,
       strokeWidth: 2,
-      points: [
+      points: const [
         LatLng(37.8087, -122.4098), // Near Fisherman's Wharf (North)
         LatLng(37.8079, -122.4750), // Near Sea Cliff (Northwest)
         LatLng(37.7081, -122.5107), // Daly City border (Southwest)
@@ -167,8 +167,8 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
 
   void initCircles() {
     Circle circle = Circle(
-      circleId: CircleId('1'),
-      center: LatLng(37.7749, -122.4194),
+      circleId: const CircleId('1'),
+      center: const LatLng(37.7749, -122.4194),
       radius: 10000,
       fillColor: Colors.deepOrangeAccent.withValues(alpha: 0.3),
       strokeWidth: 3,
@@ -207,7 +207,7 @@ class _GoogleMapsHomePageBodyState extends State<GoogleMapsHomePageBody> {
   void setMyLocationMarker(LocationData locationData) {
     markers.add(
       Marker(
-        markerId: MarkerId('my_location_marker'),
+        markerId: const MarkerId('my_location_marker'),
         position: LatLng(locationData.latitude!, locationData.longitude!),
       ),
     );

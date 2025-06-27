@@ -7,6 +7,7 @@ import 'package:google_maps_section/utils/google_maps_place_service.dart';
 import 'package:google_maps_section/utils/location_services.dart';
 import 'package:google_maps_section/widgets/custom_list_view.dart';
 import 'package:google_maps_section/widgets/custom_text_field.dart';
+import 'package:uuid/uuid.dart';
 
 class RouteTrackerBody extends StatefulWidget {
   const RouteTrackerBody({super.key});
@@ -21,8 +22,12 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   late LocationServices locationService;
   late GoogleMapsPlaceService googleMapsPlaceService;
   late TextEditingController searchController;
+  late Uuid uuid;
+  String? sessionToken;
   @override
   void initState() {
+    uuid = const Uuid();
+
     searchController = TextEditingController();
     googleMapsPlaceService = GoogleMapsPlaceService();
     locationService = LocationServices();
@@ -63,7 +68,18 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
             child: Column(
               children: [
                 CostumTextField(searchController: searchController),
-                CustomListView(places: places),
+                CustomListView(
+                  places: places,
+                  googleMapsPlaceService: googleMapsPlaceService,
+
+                  onPlaceSelected: (latlng) {
+                    mapController.animateCamera(CameraUpdate.newLatLng(latlng));
+                    places.clear();
+                    searchController.clear();
+                    sessionToken = null;
+                    setState(() {});
+                  },
+                ),
               ],
             ),
           ),
@@ -81,7 +97,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
       );
       log('Current Location: ${locationData.latitude!}');
       Marker currentlocationMarker = Marker(
-        markerId: MarkerId('current_loaction'),
+        markerId: const MarkerId('current_loaction'),
         position: currentLatLng,
       );
       setState(() {
@@ -96,14 +112,14 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
       );
     } on LocationServiceGPSException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: Colors.red,
           content: Text('GPS is not enabled.'),
         ),
       );
     } on LocationServicePermissionException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: Colors.red,
           content: Text(
             'No permission given! Please enable location permissions.',
@@ -122,8 +138,11 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
 
   void fetchPredictions() {
     searchController.addListener(() async {
+      sessionToken ??= uuid.v4();
+      log(sessionToken!);
       if (searchController.text.isNotEmpty) {
         var result = await googleMapsPlaceService.getPredictions(
+          sessionToken: sessionToken!,
           input: searchController.text,
         );
         places.clear();
