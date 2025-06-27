@@ -1,10 +1,16 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_section/models/location_info_model/lat_lng.dart';
+import 'package:google_maps_section/models/location_info_model/location.dart';
+import 'package:google_maps_section/models/location_info_model/location_info_model.dart';
 import 'package:google_maps_section/models/place_autocomplete_model/place_autocomplete_model.dart';
+import 'package:google_maps_section/models/routes_model/routes_model.dart';
 import 'package:google_maps_section/utils/google_maps_place_service.dart';
 import 'package:google_maps_section/utils/location_services.dart';
+import 'package:google_maps_section/utils/routes_service.dart';
 import 'package:google_maps_section/widgets/custom_list_view.dart';
 import 'package:google_maps_section/widgets/custom_text_field.dart';
 import 'package:uuid/uuid.dart';
@@ -24,6 +30,9 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   late TextEditingController searchController;
   late Uuid uuid;
   String? sessionToken;
+  late RoutesService routesService;
+  late LatLng currentLatLng;
+  late LatLng destinationLatLng;
   @override
   void initState() {
     uuid = const Uuid();
@@ -35,6 +44,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
       target: LatLng(34, 34),
       zoom: 5,
     );
+    routesService = RoutesService();
     fetchPredictions();
     super.initState();
   }
@@ -78,6 +88,8 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
                     searchController.clear();
                     sessionToken = null;
                     setState(() {});
+                    destinationLatLng = latlng;
+                    getRoute();
                   },
                 ),
               ],
@@ -91,10 +103,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   void updateCurrentLocation() async {
     try {
       var locationData = await locationService.getLocation();
-      LatLng currentLatLng = LatLng(
-        locationData.latitude!,
-        locationData.longitude!,
-      );
+      currentLatLng = LatLng(locationData.latitude!, locationData.longitude!);
       log('Current Location: ${locationData.latitude!}');
       Marker currentlocationMarker = Marker(
         markerId: const MarkerId('current_loaction'),
@@ -153,5 +162,43 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
         setState(() {});
       }
     });
+  }
+
+  Future<List<LatLng>> getRoute() async {
+    LocationInfoModel origin = LocationInfoModel(
+      location: LocationModel(
+        latLng: LatLngModel(
+          latitude: currentLatLng.latitude,
+          longitude: currentLatLng.longitude,
+        ),
+      ),
+    );
+
+    LocationInfoModel destination = LocationInfoModel(
+      location: LocationModel(
+        latLng: LatLngModel(
+          latitude: destinationLatLng.latitude,
+          longitude: destinationLatLng.longitude,
+        ),
+      ),
+    );
+
+    RoutesModel routes = await routesService.getRoutes(
+      origin: origin,
+      destination: destination,
+    );
+    List<LatLng> points = decodepolylines(routes);
+    return points;
+  }
+
+  List<LatLng> decodepolylines(RoutesModel routes) {
+    PolylinePoints polylinePoints = PolylinePoints();
+    List<PointLatLng> result = polylinePoints.decodePolyline(
+      routes.routes!.first.polyline!.encodedPolyline!,
+    );
+    List<LatLng> points = result
+        .map((e) => LatLng(e.latitude, e.longitude))
+        .toList();
+    return points;
   }
 }
