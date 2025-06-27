@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -55,6 +55,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
     super.dispose();
   }
 
+  Set<Polyline> polylines = {};
   List<PlaceAutocompleteModel> places = [];
   Set<Marker> markers = {};
   @override
@@ -62,6 +63,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
     return Stack(
       children: [
         GoogleMap(
+          polylines: polylines,
           markers: markers,
           initialCameraPosition: initialCameraPosition,
           onMapCreated: (controller) {
@@ -82,14 +84,15 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
                   places: places,
                   googleMapsPlaceService: googleMapsPlaceService,
 
-                  onPlaceSelected: (latlng) {
+                  onPlaceSelected: (latlng) async {
                     mapController.animateCamera(CameraUpdate.newLatLng(latlng));
                     places.clear();
                     searchController.clear();
                     sessionToken = null;
                     setState(() {});
                     destinationLatLng = latlng;
-                    getRoute();
+                    var points = await getRoute();
+                    getPolylines(points);
                   },
                 ),
               ],
@@ -104,7 +107,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
     try {
       var locationData = await locationService.getLocation();
       currentLatLng = LatLng(locationData.latitude!, locationData.longitude!);
-      log('Current Location: ${locationData.latitude!}');
+
       Marker currentlocationMarker = Marker(
         markerId: const MarkerId('current_loaction'),
         position: currentLatLng,
@@ -148,7 +151,7 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   void fetchPredictions() {
     searchController.addListener(() async {
       sessionToken ??= uuid.v4();
-      log(sessionToken!);
+
       if (searchController.text.isNotEmpty) {
         var result = await googleMapsPlaceService.getPredictions(
           sessionToken: sessionToken!,
@@ -200,5 +203,42 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
         .map((e) => LatLng(e.latitude, e.longitude))
         .toList();
     return points;
+  }
+
+  void getPolylines(List<LatLng> points) {
+    Polyline route = Polyline(
+      polylineId: const PolylineId('route'),
+      points: points,
+      color: Colors.blue,
+      width: 5,
+      startCap: Cap.roundCap,
+    );
+    polylines.add(route);
+    Marker destinationMarker = Marker(
+      markerId: const MarkerId('destination'),
+      position: points.last,
+    );
+    markers.add(destinationMarker);
+    LatLngBounds bounds = getLatLngBounds(points);
+    mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 32));
+    setState(() {});
+  }
+
+  LatLngBounds getLatLngBounds(List<LatLng> points) {
+    double southwestLat = points.first.latitude;
+    double southwestLng = points.first.longitude;
+    double northeastLat = points.first.latitude;
+    double northeastLng = points.first.longitude;
+    for (var point in points) {
+      southwestLat = min(southwestLat, point.latitude);
+      southwestLng = min(southwestLng, point.longitude);
+      northeastLat = max(southwestLat, point.latitude);
+      northeastLng = max(southwestLng, point.longitude);
+    }
+    LatLngBounds bounds = LatLngBounds(
+      southwest: LatLng(southwestLat, southwestLng),
+      northeast: LatLng(northeastLat, northeastLng),
+    );
+    return bounds;
   }
 }
