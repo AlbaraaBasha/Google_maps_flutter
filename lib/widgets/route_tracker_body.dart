@@ -232,13 +232,13 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
     for (var point in points) {
       southwestLat = min(southwestLat, point.latitude);
       southwestLng = min(southwestLng, point.longitude);
-      northeastLat = max(southwestLat, point.latitude);
-      northeastLng = max(southwestLng, point.longitude);
+      northeastLat = max(northeastLat, point.latitude);
+      northeastLng = max(northeastLng, point.longitude);
     }
-    LatLngBounds bounds = LatLngBounds(
+
+    return LatLngBounds(
       southwest: LatLng(southwestLat, southwestLng),
       northeast: LatLng(northeastLat, northeastLng),
     );
-    return bounds;
   }
 }
