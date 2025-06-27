@@ -13,7 +13,7 @@ class GoogleMapsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Google Maps Flutter Demo',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const RouteTrackerApp(),
+      home: SafeArea(child: const RouteTrackerApp()),
     );
   }
 }
