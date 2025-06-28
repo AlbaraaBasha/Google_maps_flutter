@@ -6,7 +6,7 @@ import 'package:google_maps_section/models/places_details_model/places_details_m
 import 'package:google_maps_section/utils/Api_Keys.dart';
 import 'package:http/http.dart' as http;
 
-class GoogleMapsPlaceService {
+class PlaceService {
   String baseUrl = 'https://maps.googleapis.com/maps/api/place';
   Future<List<PlaceAutocompleteModel>> getPredictions({
     required String input,
