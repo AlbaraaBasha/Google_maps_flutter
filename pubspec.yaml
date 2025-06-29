@@ -31,6 +31,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
   flutter_polyline_points: ^2.1.0
   google_maps_flutter: ^2.12.2
   http: ^1.4.0
@@ -42,6 +43,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/355980.png
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 # The following section is specific to Flutter packages.
@@ -56,6 +61,7 @@ flutter:
   assets:
     - assets/map_styles/map_night_mode.json
     - assets/images/
+    - assets/icon/355980.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
   # For details regarding adding assets from package dependencies, see

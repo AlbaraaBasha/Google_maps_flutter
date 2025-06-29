@@ -16,7 +16,8 @@ class MapServices {
   LocationServices locationService = LocationServices();
   PlaceService placeService = PlaceService();
   RoutesService routesService = RoutesService();
-
+  LatLng? currentLatLng;
+  bool isFirstTime = true;
   getPredictions({
     required TextEditingController searchController,
     required sessionToken,
@@ -34,37 +35,51 @@ class MapServices {
     }
   }
 
-  Future<LatLng> updateCurrentLocation({
+  void updateCurrentLocation({
     required Set<Marker> markers,
     required GoogleMapController mapController,
+    required Function onLocationUpdated,
+    double? newZoom,
   }) async {
-    var locationData = await locationService.getLocation();
-    var currentLatLng = LatLng(locationData.latitude!, locationData.longitude!);
+    locationService.getRealTimeLocation((locationData) {
+      currentLatLng = LatLng(locationData.latitude!, locationData.longitude!);
 
-    Marker currentlocationMarker = Marker(
-      markerId: const MarkerId('current_loaction'),
-      position: currentLatLng,
-    );
+      Marker currentlocationMarker = Marker(
+        markerId: const MarkerId('current_loaction'),
+        position: currentLatLng!,
+      );
 
-    markers.add(currentlocationMarker);
-
-    CameraPosition cameraPosition = CameraPosition(
-      target: currentLatLng,
-      zoom: 15,
-    );
-    mapController.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-    return currentLatLng;
+      markers.add(currentlocationMarker);
+      onLocationUpdated();
+      CameraPosition cameraPosition = CameraPosition(
+        target: currentLatLng!,
+        zoom: 17,
+      );
+      if (isFirstTime) {
+        mapController.animateCamera(
+          CameraUpdate.newCameraPosition(cameraPosition),
+        );
+        isFirstTime = false;
+      } else {
+        newZoom == null
+            ? mapController.animateCamera(
+                CameraUpdate.newLatLng(currentLatLng!),
+              )
+            : mapController.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(target: currentLatLng!, zoom: newZoom),
+                ),
+              );
+      }
+    });
   }
 
-  Future<List<LatLng>> getRoute({
-    required LatLng currentLatLng,
-    required LatLng destinationLatLng,
-  }) async {
+  Future<List<LatLng>> getRoute({required LatLng destinationLatLng}) async {
     LocationInfoModel origin = LocationInfoModel(
       location: LocationModel(
         latLng: LatLngModel(
-          latitude: currentLatLng.latitude,
-          longitude: currentLatLng.longitude,
+          latitude: currentLatLng!.latitude,
+          longitude: currentLatLng!.longitude,
         ),
       ),
     );

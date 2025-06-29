@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_section/models/place_autocomplete_model/place_autocomplete_model.dart';
@@ -23,7 +25,6 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   late Uuid uuid;
   String? sessionToken;
 
-  late LatLng currentLatLng;
   late LatLng destinationLatLng;
   @override
   void initState() {
@@ -43,12 +44,14 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   @override
   dispose() {
     searchController.dispose();
+    debounce?.cancel();
     super.dispose();
   }
 
   Set<Polyline> polylines = {};
   List<PlaceAutocompleteModel> places = [];
   Set<Marker> markers = {};
+  Timer? debounce;
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -83,7 +86,6 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
                     setState(() {});
                     destinationLatLng = latlng;
                     var points = await mapServices.getRoute(
-                      currentLatLng: currentLatLng,
                       destinationLatLng: destinationLatLng,
                     );
                     mapServices.getPolylines(
@@ -99,17 +101,37 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
             ),
           ),
         ),
+        Positioned(
+          bottom: 16,
+          left: 64,
+          right: 64,
+          child: ElevatedButton(
+            onPressed: () {
+              mapServices.updateCurrentLocation(
+                markers: markers,
+                mapController: mapController,
+                onLocationUpdated: () {
+                  setState(() {});
+                },
+                newZoom: 17,
+              );
+            },
+            child: const Text('Start Trip'),
+          ),
+        ),
       ],
     );
   }
 
-  void updateCurrentLocation() async {
+  void updateCurrentLocation() {
     try {
-      currentLatLng = await mapServices.updateCurrentLocation(
+      mapServices.updateCurrentLocation(
         markers: markers,
         mapController: mapController,
+        onLocationUpdated: () {
+          setState(() {});
+        },
       );
-      setState(() {});
     } on LocationServiceGPSException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -137,15 +159,17 @@ class _RouteTrackerBodyState extends State<RouteTrackerBody> {
   }
 
   void fetchPredictions() {
-    searchController.addListener(() async {
-      sessionToken ??= uuid.v4();
-
-      await mapServices.getPredictions(
-        searchController: searchController,
-        sessionToken: sessionToken,
-        places: places,
-      );
-      setState(() {});
+    searchController.addListener(() {
+      if (debounce?.isActive ?? false) debounce!.cancel();
+      debounce = Timer(const Duration(milliseconds: 200), () async {
+        sessionToken ??= uuid.v4();
+        await mapServices.getPredictions(
+          searchController: searchController,
+          sessionToken: sessionToken,
+          places: places,
+        );
+        setState(() {});
+      });
     });
   }
 }
